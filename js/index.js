@@ -15,7 +15,6 @@ async function getData() {
         }
 
         const data = await res.json();
-        console.log(data);
     } catch (error) {
         console.error("Error fetching user data:", error);
         alert("Failed to fetch user data. Please log in again.");
@@ -36,7 +35,6 @@ async function getPosts() {
 
         const posts = await res.json();
 
-        // Fetch comments for each post
         for (const post of posts) {
             const commentsRes = await fetch(
                 `${baseUrl}posts/${post.id}/comments`,
@@ -65,10 +63,8 @@ function renderPosts(posts) {
     const postsContainer = document.getElementById("postsContainer");
     const accessToken = localStorage.getItem("accessToken");
 
-    // Clear previous posts
     postsContainer.innerHTML = "";
 
-    // Loop through posts
     posts.forEach((post) => {
         const postDiv = document.createElement("div");
         postDiv.classList.add("post");
@@ -145,7 +141,6 @@ async function getComments(postId) {
         }
 
         const comments = await res.json();
-        console.log(comments);
 
         const commentsDiv = document.querySelector(`#post-${postId} .comments`);
 
@@ -191,7 +186,6 @@ async function login() {
         }
 
         const data = await res.json();
-        console.log(data);
         localStorage.setItem("accessToken", data.accessToken);
         window.location.reload();
         alert("Login successful!");
@@ -224,7 +218,6 @@ async function register() {
         }
 
         const data = await res.json();
-        console.log(data);
         alert("Registration successful! You can now log in.");
     } catch (error) {
         console.error("Error during registration:", error);
@@ -258,7 +251,6 @@ async function createPost() {
         }
 
         const data = await res.json();
-        console.log(data);
         alert("Post created successfully!");
         window.location.reload();
     } catch (error) {
@@ -268,7 +260,6 @@ async function createPost() {
 }
 
 async function createComment(postId) {
-    // Find the correct textarea for the post
     const commentTextarea = document.querySelector(
         `#post-${postId} .commentTextarea`
     );
