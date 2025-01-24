@@ -1,8 +1,10 @@
+const baseUrl = "https://sqlca.onrender.com/";
+
 async function getData() {
     const accessToken = localStorage.getItem("accessToken");
 
     try {
-        const res = await fetch("http://localhost:1313/", {
+        const res = await fetch(`${baseUrl}`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
@@ -22,7 +24,7 @@ async function getData() {
 
 async function getPosts() {
     try {
-        const res = await fetch("http://localhost:1313/posts", {
+        const res = await fetch(`${baseUrl}posts`, {
             headers: {
                 "Content-Type": "application/json",
             },
@@ -37,7 +39,7 @@ async function getPosts() {
         // Fetch comments for each post
         for (const post of posts) {
             const commentsRes = await fetch(
-                `http://localhost:1313/posts/${post.id}/comments`,
+                `${baseUrl}posts/${post.id}/comments`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -49,10 +51,10 @@ async function getPosts() {
                 throw new Error(`Failed to fetch comments for post ${post.id}`);
             }
 
-            post.comments = await commentsRes.json(); // Attach comments to the post object
+            post.comments = await commentsRes.json();
         }
 
-        renderPosts(posts); // Pass the posts with comments to renderPosts
+        renderPosts(posts);
     } catch (error) {
         console.error("Error fetching posts and comments:", error);
         alert("Failed to fetch posts. Please try again later.");
@@ -70,6 +72,7 @@ function renderPosts(posts) {
     posts.forEach((post) => {
         const postDiv = document.createElement("div");
         postDiv.classList.add("post");
+        postDiv.setAttribute("id", `post-${post.id}`);
 
         // Post content
         postDiv.innerHTML = `
@@ -109,9 +112,10 @@ function renderPosts(posts) {
         if (accessToken) {
             const commentForm = document.createElement("form");
             commentForm.innerHTML = `
-                <textarea id="commentContent" placeholder="Add your comment"></textarea>
+                <textarea class="commentTextarea" placeholder="Add your comment"></textarea>
                 <button type="submit">Add Comment</button>
             `;
+
             commentForm.addEventListener("submit", (e) => {
                 e.preventDefault();
                 createComment(post.id);
@@ -130,14 +134,11 @@ getPosts();
 
 async function getComments(postId) {
     try {
-        const res = await fetch(
-            `http://localhost:1313/posts/${postId}/comments`,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+        const res = await fetch(`${baseUrl}posts/${postId}/comments`, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
 
         if (!res.ok) {
             throw new Error("Failed to fetch comments");
@@ -145,7 +146,24 @@ async function getComments(postId) {
 
         const comments = await res.json();
         console.log(comments);
-        // Optionally, update the DOM to display comments
+
+        const commentsDiv = document.querySelector(`#post-${postId} .comments`);
+
+        commentsDiv.innerHTML = "<h4>Comments:</h4>";
+
+        if (comments.length > 0) {
+            comments.forEach((comment) => {
+                const commentParagraph = document.createElement("p");
+                commentParagraph.innerHTML = `<strong>${
+                    comment.username
+                }:</strong> ${comment.comment} <small>(${new Date(
+                    comment.created_at
+                ).toLocaleDateString()})</small>`;
+                commentsDiv.appendChild(commentParagraph);
+            });
+        } else {
+            commentsDiv.innerHTML += "<p>No comments yet.</p>";
+        }
     } catch (error) {
         console.error("Error fetching comments:", error);
         alert("Failed to fetch comments. Please try again later.");
@@ -157,7 +175,7 @@ async function login() {
     const password = document.querySelector("#password").value;
 
     try {
-        const res = await fetch("http://localhost:1313/login", {
+        const res = await fetch(`${baseUrl}login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -189,7 +207,7 @@ async function register() {
     const password = document.querySelector("#registerPassword").value;
 
     try {
-        const res = await fetch("http://localhost:1313/register", {
+        const res = await fetch(`${baseUrl}register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -222,7 +240,7 @@ async function createPost() {
     const accessToken = localStorage.getItem("accessToken");
 
     try {
-        const res = await fetch("http://localhost:1313/add-post", {
+        const res = await fetch(`${baseUrl}add-post`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -250,47 +268,47 @@ async function createPost() {
 }
 
 async function createComment(postId) {
-    const comment = document.querySelector("#commentContent").value; // Get comment content from the form
-    const accessToken = localStorage.getItem("accessToken"); // Get JWT from localStorage
+    // Find the correct textarea for the post
+    const commentTextarea = document.querySelector(
+        `#post-${postId} .commentTextarea`
+    );
+    const comment = commentTextarea.value.trim();
+
+    if (!comment) {
+        alert("Comment cannot be empty!");
+        return;
+    }
+
+    const accessToken = localStorage.getItem("accessToken");
 
     try {
-        const res = await fetch(
-            `http://localhost:1313/posts/${postId}/comments`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({
-                    comment, // The comment content
-                }),
-            }
-        );
+        const res = await fetch(`${baseUrl}posts/${postId}/comments`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ comment }),
+        });
 
         if (!res.ok) {
             throw new Error("Failed to add comment");
         }
 
         const data = await res.json();
-        console.log(data);
-        alert("Comment added successfully!");
 
-        // Optionally, you may want to reload the comments after adding
-        getComments(postId); // Reload the comments for this post
+        getComments(postId);
     } catch (error) {
         console.error("Error adding comment:", error);
         alert("Failed to add comment. Please try again.");
     }
 }
 
-// Add event listener to form
 document.querySelector("#createPostForm").addEventListener("submit", (e) => {
     e.preventDefault();
     createPost();
 });
 
-// Add event listeners to separate forms
 document.querySelector("#loginForm").addEventListener("submit", (e) => {
     e.preventDefault();
     login();
@@ -310,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
         createPostForm.style.display = "none";
     }
 
-    // register hide
+    // register and login hide
     const registerForm = document.querySelector("#registerForm");
     const loginForm = document.querySelector("#loginForm");
     if (accessToken) {
